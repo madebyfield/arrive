@@ -12,8 +12,6 @@
  */
 var Arrive = (function(window, undefined, undefined) {
 
-  "use strict";
-
   if(!window.MutationObserver || typeof HTMLElement === 'undefined'){
     return; //for unsupported browsers
   }
@@ -156,11 +154,6 @@ var Arrive = (function(window, undefined, undefined) {
 
       registrationData.observer = observer;
       registrationData.me = me;
-    });
-
-    // cleanup/unregister before removing an event
-    eventsBucket.beforeRemoving(function (eventData) {
-      eventData.observer.disconnect();
     });
 
     this.bindEvent = function(selector, options, callback) {

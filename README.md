@@ -22,27 +22,6 @@ $ npm install arrive --save
 ## Usage
 **The library does not depend on jQuery, you can replace jQuery elements in the examples below with pure javascript elements and it would work fine.**
 ### Watch for elements creation
-Use `arrive` event to watch for elements creation:
-```javascript
-// watch for creation of an element which satisfies the selector ".test-elem"
-$(document).arrive(".test-elem", function() {
-    // 'this' refers to the newly created element
-    var $newElem = $(this);
-});
-
-// the above event would watch for creation of element in whole document
-// it's better to be more specific whenever possible, for example
-$(".container-1").arrive(".test-elem", function() {
-    var $newElem = $(this);
-});
-
-// as of v2.3.2, new element is also passed as argument to the callback function.
-// This is to support arrow functions as 'this' is not bindable in arrow functions.
-$(document).arrive(".test-elem", function(newElem) {
-    var $newElem = $(newElem);
-});
-```
-
 In pure javascript you can call the function on `document`, `window`, any `HTMLElement` or `NodeList`, like this:
 ```javascript
 // watch for element creation in the whole HTML document
@@ -56,60 +35,13 @@ document.getElementsByClassName(".container-1").arrive(".test-elem", function() 
 });
 ```
 
-Make sure to remove listeners when they are no longer needed, it's better for performance:
-```javascript
-// unbind all arrive events on document element
-$(document).unbindArrive();
-
-// unbind all arrive events on document element which are watching for ".test-elem" selector
-$(document).unbindArrive(".test-elem");
-
-// unbind only a specific callback
-$(document).unbindArrive(callbackFunc);
-
-// unbind only a specific callback on ".test-elem" selector
-$(document).unbindArrive(".test-elem", callbackFunc);
-
-// unbind all arrive events
-Arrive.unbindAllArrive();
-```
-
 #### Options
 As of v2.0 `arrive` event accepts an optional `options` object as 2nd argument. Options object consists of following:
 ```javascript
 var options = {
     fireOnAttributesModification: boolean, // Defaults to false. Setting it to true would make arrive event fire on existing elements which start to satisfy selector after some modification in DOM attributes (an arrive event won't fire twice for a single element even if the option is true). If false, it'd only fire for newly created elements.
-    onceOnly: boolean                      // Defaults to false. Setting it to true would ensure that registered callbacks fire only once. No need to unbind the event if the attribute is set to true, it'll automatically unbind after firing once.
-    existing: boolean                      // Defaults to false. Setting it to true would ensure that the registered callback is fired for the elements that already exist in the DOM and match the selector. If options.onceOnly is set, the callback is only called once with the first element matching the selector.
+    existing: boolean                      // Defaults to false. Setting it to true would ensure that the registered callback is fired for the elements that already exist in the DOM and match the selector.
 };
-```
-Example:
-```javascript
-$(document).arrive(".test-elem", {fireOnAttributesModification: true}, function() {
-    // 'this' refers to the newly created element
-    var $newElem = $(this);
-});
-```
-
-### Watch for elements removal
-Use `leave` event to watch for elements removal.
-The first arugument to leave must not be a [descendent](https://developer.mozilla.org/en-US/docs/Web/CSS/Descendant_selectors) or [child](https://developer.mozilla.org/en-US/docs/Web/CSS/Child_selectors) selector i.e. you cannot pass `.page .test-elem`, instead, pass `.test-elem`. It's because of a limitation in MutationObserver's api.
-
-```javascript
-// watch for removal of an element which satisfies the selector ".test-elem"
-$(".container-1").leave(".test-elem", function() {
-    var $removedElem = $(this);
-});
-```
-
-You can unbind the `leave` event in the same way as `arrive` event, using `unbindLeave` function i.e:
-
-```javascript
-// unbind all leave events on document element
-$(document).unbindLeave();
-
-// unbind all leave events
-Arrive.unbindAllLeave();
 ```
 
 

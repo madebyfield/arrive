@@ -10,7 +10,7 @@
  *
  * Copyright (c) 2014-2017 Uzair Farooq
  */
-var Arrive = (function(window, null, undefined) {
+var Arrive = (function(window, undefined, undefined) {
 
   "use strict";
 
@@ -40,21 +40,10 @@ var Arrive = (function(window, null, undefined) {
         };
       },
       callCallbacks: function(callbacksToBeCalled, registrationData) {
-        if (registrationData && registrationData.options.onceOnly && registrationData.firedElems.length == 1) {
-          // as onlyOnce param is true, make sure we fire the event for only one item
-          callbacksToBeCalled = [callbacksToBeCalled[0]];
-        }
-
         for (var i = 0, cb; (cb = callbacksToBeCalled[i]); i++) {
           if (cb && cb.callback) {
             cb.callback.call(cb.elem, cb.elem);
           }
-        }
-
-        if (registrationData && registrationData.options.onceOnly && registrationData.firedElems.length == 1) {
-          // unbind event after first callback as onceOnly is true.
-          registrationData.me.unbindEventWithSelectorAndCallback.call(
-            registrationData.target, registrationData.selector, registrationData.callback);
         }
       },
       // traverse through all descendants of a node to check if event should be fired for any descendant
@@ -196,7 +185,6 @@ var Arrive = (function(window, null, undefined) {
     // Default options for 'arrive' event
     var arriveDefaultOptions = {
       fireOnAttributesModification: false,
-      onceOnly: false,
       existing: false
     };
 
@@ -276,11 +264,6 @@ var Arrive = (function(window, null, undefined) {
           for (var j = 0; j < nodes.length; j++) {
             existing.push({ callback: callback, elem: nodes[j] });
           }
-        }
-
-        // no need to bind event if the callback has to be fired only once and we have already found the element
-        if (options.onceOnly && existing.length) {
-          return callback.call(existing[0].elem, existing[0].elem);
         }
 
         setTimeout(utils.callCallbacks, 1, existing);

@@ -10,7 +10,7 @@
  *
  * Copyright (c) 2014-2017 Uzair Farooq
  */
-var Arrive = (function(window, $, undefined) {
+var Arrive = (function(window, null, undefined) {
 
   "use strict";
 
@@ -21,8 +21,7 @@ var Arrive = (function(window, $, undefined) {
   var arriveUniqueId = 0;
 
   var utils = (function() {
-    var matches = HTMLElement.prototype.matches || HTMLElement.prototype.webkitMatchesSelector || HTMLElement.prototype.mozMatchesSelector
-                  || HTMLElement.prototype.msMatchesSelector;
+      var matches = HTMLElement.prototype.matches || HTMLElement.prototype.webkitMatchesSelector || HTMLElement.prototype.mozMatchesSelector || HTMLElement.prototype.msMatchesSelector;
 
     return {
       matchesSelector: function(elem, selector) {
@@ -107,8 +106,6 @@ var Arrive = (function(window, $, undefined) {
       this._eventsBucket    = [];
       // function to be called while adding an event, the function should do the event initialization/registration
       this._beforeAdding    = null;
-      // function to be called while removing an event, the function should do the event destruction
-      this._beforeRemoving  = null;
     };
 
     EventsBucket.prototype.addEvent = function(target, selector, options, callback) {
@@ -128,28 +125,8 @@ var Arrive = (function(window, $, undefined) {
       return newEvent;
     };
 
-    EventsBucket.prototype.removeEvent = function(compareFunction) {
-      for (var i=this._eventsBucket.length - 1, registeredEvent; (registeredEvent = this._eventsBucket[i]); i--) {
-        if (compareFunction(registeredEvent)) {
-          if (this._beforeRemoving) {
-              this._beforeRemoving(registeredEvent);
-          }
-
-          // mark callback as null so that even if an event mutation was already triggered it does not call callback
-          var removedEvents = this._eventsBucket.splice(i, 1);
-          if (removedEvents && removedEvents.length) {
-            removedEvents[0].callback = null;
-          }
-        }
-      }
-    };
-
     EventsBucket.prototype.beforeAdding = function(beforeAdding) {
       this._beforeAdding = beforeAdding;
-    };
-
-    EventsBucket.prototype.beforeRemoving = function(beforeRemoving) {
-      this._beforeRemoving = beforeRemoving;
     };
 
     return EventsBucket;
@@ -158,7 +135,7 @@ var Arrive = (function(window, $, undefined) {
 
   /**
    * @constructor
-   * General class for binding/unbinding arrive and leave events
+   * General class for binding arrive events
    */
   var MutationEvents = function(getObserverConfig, onMutation) {
     var eventsBucket    = new EventsBucket(),
@@ -205,58 +182,6 @@ var Arrive = (function(window, $, undefined) {
       for (var i = 0; i < elements.length; i++) {
         eventsBucket.addEvent(elements[i], selector, options, callback);
       }
-    };
-
-    this.unbindEvent = function() {
-      var elements = utils.toElementsArray(this);
-      eventsBucket.removeEvent(function(eventObj) {
-        for (var i = 0; i < elements.length; i++) {
-          if (this === undefined || eventObj.target === elements[i]) {
-            return true;
-          }
-        }
-        return false;
-      });
-    };
-
-    this.unbindEventWithSelectorOrCallback = function(selector) {
-      var elements = utils.toElementsArray(this),
-          callback = selector,
-          compareFunction;
-
-      if (typeof selector === "function") {
-        compareFunction = function(eventObj) {
-          for (var i = 0; i < elements.length; i++) {
-            if ((this === undefined || eventObj.target === elements[i]) && eventObj.callback === callback) {
-              return true;
-            }
-          }
-          return false;
-        };
-      }
-      else {
-        compareFunction = function(eventObj) {
-          for (var i = 0; i < elements.length; i++) {
-            if ((this === undefined || eventObj.target === elements[i]) && eventObj.selector === selector) {
-              return true;
-            }
-          }
-          return false;
-        };
-      }
-      eventsBucket.removeEvent(compareFunction);
-    };
-
-    this.unbindEventWithSelectorAndCallback = function(selector, callback) {
-      var elements = utils.toElementsArray(this);
-      eventsBucket.removeEvent(function(eventObj) {
-          for (var i = 0; i < elements.length; i++) {
-            if ((this === undefined || eventObj.target === elements[i]) && eventObj.selector === selector && eventObj.callback === callback) {
-              return true;
-            }
-          }
-          return false;
-      });
     };
 
     return this;
@@ -367,84 +292,13 @@ var Arrive = (function(window, $, undefined) {
     return arriveEvents;
   };
 
-
-  /**
-   * @constructor
-   * Processes 'leave' events
-   */
-  var LeaveEvents = function() {
-    // Default options for 'leave' event
-    var leaveDefaultOptions = {};
-
-    function getLeaveObserverConfig() {
-      var config = {
-        childList: true,
-        subtree: true
-      };
-
-      return config;
-    }
-
-    function onLeaveMutation(mutations, registrationData) {
-      mutations.forEach(function( mutation ) {
-        var removedNodes  = mutation.removedNodes,
-            callbacksToBeCalled = [];
-
-        if( removedNodes !== null && removedNodes.length > 0 ) {
-          utils.checkChildNodesRecursively(removedNodes, registrationData, nodeMatchFunc, callbacksToBeCalled);
-        }
-
-        utils.callCallbacks(callbacksToBeCalled, registrationData);
-      });
-    }
-
-    function nodeMatchFunc(node, registrationData) {
-      return utils.matchesSelector(node, registrationData.selector);
-    }
-
-    leaveEvents = new MutationEvents(getLeaveObserverConfig, onLeaveMutation);
-
-    var mutationBindEvent = leaveEvents.bindEvent;
-
-    // override bindEvent function
-    leaveEvents.bindEvent = function(selector, options, callback) {
-
-      if (typeof callback === "undefined") {
-        callback = options;
-        options = leaveDefaultOptions;
-      } else {
-        options = utils.mergeArrays(leaveDefaultOptions, options);
-      }
-
-      mutationBindEvent.call(this, selector, options, callback);
-    };
-
-    return leaveEvents;
-  };
-
-
-  var arriveEvents = new ArriveEvents(),
-      leaveEvents  = new LeaveEvents();
-
-  function exposeUnbindApi(eventObj, exposeTo, funcName) {
-    // expose unbind function with function overriding
-    utils.addMethod(exposeTo, funcName, eventObj.unbindEvent);
-    utils.addMethod(exposeTo, funcName, eventObj.unbindEventWithSelectorOrCallback);
-    utils.addMethod(exposeTo, funcName, eventObj.unbindEventWithSelectorAndCallback);
-  }
+  var arriveEvents = new ArriveEvents();
 
   /*** expose APIs ***/
   function exposeApi(exposeTo) {
     exposeTo.arrive = arriveEvents.bindEvent;
-    exposeUnbindApi(arriveEvents, exposeTo, "unbindArrive");
-
-    exposeTo.leave = leaveEvents.bindEvent;
-    exposeUnbindApi(leaveEvents, exposeTo, "unbindLeave");
   }
 
-  if ($) {
-    exposeApi($.fn);
-  }
   exposeApi(HTMLElement.prototype);
   exposeApi(NodeList.prototype);
   exposeApi(HTMLCollection.prototype);
@@ -452,10 +306,7 @@ var Arrive = (function(window, $, undefined) {
   exposeApi(Window.prototype);
 
   var Arrive = {};
-  // expose functions to unbind all arrive/leave events
-  exposeUnbindApi(arriveEvents, Arrive, "unbindAllArrive");
-  exposeUnbindApi(leaveEvents, Arrive, "unbindAllLeave");
 
   return Arrive;
 
-})(window, typeof jQuery === 'undefined' ? null : jQuery, undefined);
+})(window, null, undefined);
